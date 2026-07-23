@@ -1,0 +1,38 @@
+name: Pokemon Center Stock Check
+
+on:
+  schedule:
+    # Runs every 5 minutes. GitHub may delay this slightly during busy times.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {} # lets you click "Run workflow" manually to test
+
+permissions:
+  contents: write # needed so the robot can save its memory (state.json)
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the checker
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python checker.py
+
+      - name: Save the robot's memory (state.json) back to the repo
+        run: |
+          git config user.name "pokecenter-bot"
+          git config user.email "actions@github.com"
+          git add state.json
+          git diff --quiet --cached || git commit -m "update state"
+          git push
